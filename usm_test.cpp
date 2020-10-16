@@ -6,23 +6,25 @@ static const int N = 4;
 
 class syclFlow{
 public:
-
-    template <typenem
-    void parallel_for
-
-private:
-    cl::sycl:queue deviceQueu{cl::sycl::default_selector{}};
-
+    
+    queue deviceQueue{default_selector{}};
+    
+    template <typename R, typename C>
+    void parallel_for(R& range, C&& callable);
 
     syclFlow(){    std::cout << "constructor\n"; }
+private:
+    //cl::sycl:queue deviceQueu{cl::sycl::default_selector{}};
+
+
 };
 
 
 int main(){
+    syclFlow sf;
     queue q;
-
-    int* d1 = malloc_shared<int>(N, q);
-    int* d2 = malloc_shared<int>(N, q);
+    int* d1 = malloc_shared<int>(N, sf.deviceQueue);
+    int* d2 = malloc_shared<int>(N, sf.deviceQueue);
 
     for(int i = 0; i < N; ++i){
         d1[i] = 10;
