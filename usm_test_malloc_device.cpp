@@ -5,17 +5,57 @@ static const int N = 8;
 
 
 class syclNode{
+public:
+    template <typename C, typename... ArgsT>
+    syclNode(C&&, ArgsT&&...);
 
+private:
+    std::string _name;
+
+    std::vector<syclNode*> _successors;
+
+    void _precede(syclNode* v){
+        _successors.push_back(v);
+    }
 };
 
 
 class syclTask{
 public:
-    template <typename... Ts>
-    cudaTask& precede(Ts&&... tasks);
+
+    const std::string& name() const { 
+        return _node->_name;  
+    }
+
+    syclTask& name(const std::string& name){
+        _node->_name = name;
+        return *this  
+    }
+
+    size_t num_successors() const {
+        return _node->_successors.size();  
+    }
+
+    bool empty() const{
+        return _node == nullptr;
+    }
 
     template <typename... Ts>
-    cudaTask& succeed(Ts&&... tasks);
+    syclTask& precede(Ts&&... tasks){
+        (_node->_precede(tasks._node), ...);
+        return *this;
+    }
+
+    template <typename... Ts>
+    syclTask& succeed(Ts&&... tasks){
+        (tasks._node->_precede(_node), ...);
+        return *this;
+    }
+
+private:
+    syclTask* _node {nullptr};
+
+    syclTask(syclNode*): _node {node} {}
 };
 
 
