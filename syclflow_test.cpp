@@ -29,32 +29,34 @@ friend class syclFlow;
 friend class syclGraph;
 
 
-  struct Memcpy {
-    void* target;
-    void* source;
-    size_t bytes;
-    sycl::event event;
-  };
+    struct Memcpy{
+        void* tgt;
+        void* src;
+        size_t bytes;
+        sycl::event event;
+    };
 
-  struct ParallelFor {
-    std::function<sycl::event(sycl::queue&, std::vector<sycl::event>&)> work;
-    sycl::event event;
-  };
+    struct ParallelFor{
+        std::function<sycl::event(sycl::queue&, std::vector<sycl::event>&)> work;
+        sycl::event event;
+    };
 
-  struct Memset {
-    void* target;
-    int value;
-    size_t bytes;
-    sycl::event event;
-  };
+    struct Memset{
+        void* dst;
+        int v;
+        size_t bytes;
+        sycl::event event;
+    };
 
 public:
-
 
     template <typename C, typename... ArgsT>
     syclNode(C&&, ArgsT&&...);
 
     syclNode() = default;
+
+    template <typename... ArgsT>
+    syclNode(ArgsT&&...);
     
 
 private:
@@ -63,7 +65,7 @@ private:
     //    _name = "node_"; 
     //}
 
-    std::variant<Memcpy, Memset> _handle;
+    std::variant<Memcpy, Memset, ParallelFor> _handle;
 
     std::string _name;
 
@@ -71,12 +73,6 @@ private:
 
     void _precede(syclNode* v){
         _successors.push_back(v);
-
-        for(auto s : _successors){ 
-              
-            std::cout << s->_name << ' '; 
-        }
-        std::cout << '\n';
     }
 };
 
@@ -120,7 +116,7 @@ public:
     template <typename T>
     syclTask memcpy(T* tgt, const T* src, size_t bytes){
         auto node = _graph.emplace_back(
-          std::inplace_type_t<syclNode::Memcpy>, tgt, src, bytes
+            std::inplace_type_t<syclNode::Memcpy>{}, tgt, src, bytes
         );
 
         //handle.work = [tgt, src, bytes] (sycl::queue& queue) {
@@ -146,33 +142,39 @@ public:
       return syclTask(node);
     }
 
+    syclTask memset(T* dst, int v, size_t bytes){
+        auto node = _graph.emplace_back(
+            std::inplace_type_t<syclNode::Memset>, dst, v, bytes
+        );
+        return syclTask(node);
+    }
+
     void run(){
-      topology_sort(_graph.nodes);
+        topology_sort(_graph.nodes);
 
-      for(auto node : _graph.nodes) {
+        for(auto node : _graph.nodes) {
         
-        // I need to make sure all the predecessors finish
-        for(auto pred : node->_dependents) {
-          auto& event = std::get<...>(pred->_handle).event;
-          event.wait();
+            // I need to make sure all the predecessors finish
+            for(auto pred : node->_dependents) {
+                auto& event = std::get<...>(pred->_handle).event;
+                event.wait();
+            }
+
+            // case 1: if node is a memcpy node
+            auto& h = std::get<syclNode::Memcpy>(node->_handle)
+            auto event = _queue.memcpy(h.tgt, h.src. h.bytes);
+            h.event = event;
+
+            // case 2: if node is a parallel-for node
+            auto event = _queue.parallel_for()
+            auto& h = std::get<sycl::Node::ParallelFor>(node->_bandle);
+            auto event = h.work(_queue, events);
+
+            // case 3: if node is a memset
+            auto& h = std::get<syclNode::Memset>(node->_handler);
+            auto event = _queue.memset(h.dst, h.v, h.bytes);
+            h.event = event;
         }
-
-        // case 1: if node is a memcpy node
-        auto& h = std::get<syclNode::Memcpy>(node->_handle)
-        auto event = _queue.memcpy(h.tgt, h.src. h.bytes);
-        h.event = event;
-
-        // case 2: if node is a parallel-for node
-        auto event = _queue.parallel_for()
-        auto& h = std::get<sycl::Node::ParallelFor>(node->_bandle);
-        auto event = h.work(_queue, events);
-      }
-
-      //for(auto node : _graph.nodes) {
-     
-
- //  
-      //}
     };
 
     syclFlow(queue& q) : 
