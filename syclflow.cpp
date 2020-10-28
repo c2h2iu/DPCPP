@@ -41,13 +41,13 @@ class syclNode {
       int v;
       size_t bytes;
 
-      Memset(void* dst, int v, size_t bytes) : dst{dst}, v{v}, bytes{bytes} {}
+      Memset(void* dst, int v, size_t bytes) : dst {dst}, v {v}, bytes {bytes} {}
     };
     
     syclNode() = default;
 
     template <typename... ArgsT>
-    syclNode(ArgsT&&... args) : _handle{std::forward<ArgsT>(args)...} {}
+    syclNode(ArgsT&&... args) : _handle {std::forward<ArgsT>(args)...} {}
     
   private:
 
@@ -63,7 +63,7 @@ class syclNode {
 
     sycl::event _event;
 
-    void _precede(syclNode* v){
+    void _precede(syclNode* v) {
       _successors.push_back(v);
       (v->_predecessors).push_back(this);
     }
