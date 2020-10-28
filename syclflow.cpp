@@ -187,7 +187,6 @@ class syclFlow {
 
 
     void run() {
-        
         _graph.topology_sort();
 
         for (auto node : _graph._nodes_sorted) {
