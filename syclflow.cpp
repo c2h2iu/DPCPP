@@ -2,6 +2,8 @@
 #include <vector>
 #include <stack>
 #include <variant>
+#include <queue>
+#include <map>
 
 
 using namespace sycl;
@@ -111,6 +113,35 @@ class syclGraph {
       }     
     }
 
+    void topology_sort_iterative() {
+      std::map<syclNode*, int> in_degree;
+      std::queue<syclNode*> q;
+      
+      for (auto n : _nodes) {
+        for (auto s : (n->_successors)) {
+          in_degree[s]++;
+        }
+      }
+
+      for (auto n : _nodes) {
+        if (in_degree[n] == 0) {
+          q.push(n);
+        }
+      }
+
+      while (!q.empty()) {
+        syclNode* n = q.front();
+        q.pop();
+        _nodes_sorted.push_back(n);
+
+        for (auto s : (n->_successors)) {
+          if (--in_degree[s] == 0) {
+            q.push(s);
+          }
+        }
+      }
+    }
+
 private:
     std::vector<syclNode*> _nodes;
 
@@ -187,7 +218,7 @@ class syclFlow {
 
 
     void run() {
-        _graph.topology_sort();
+        _graph.topology_sort_iterative();
 
         for (auto node : _graph._nodes_sorted) {
           
